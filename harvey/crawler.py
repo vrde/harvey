@@ -46,7 +46,7 @@ class Crawler(Greenlet):
             url = urltools.normalize(urljoin(r.url, link))
             urls.add(url)
 
-        self.stats['urls'] += len(urls)
+        # self.stats['urls'] += len(urls)
         self.stats['processed'] += 1
 
         return urls

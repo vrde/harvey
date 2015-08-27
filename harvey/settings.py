@@ -47,6 +47,10 @@ _LOGGING = {
             'level': 'WARNING',
             'handlers': ['console']
         },
+        'gevent_utils': {
+            'level': 'DEBUG',
+            'handlers': ['console']
+        },
         'harvey': {
             'level': 'DEBUG',
             'handlers': ['console']

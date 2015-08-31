@@ -18,13 +18,14 @@ def run_crawler(arguments):
     
     q_urls = gevent.queue.Queue(100)
     q_results = gevent.queue.Queue(100)
-    frontier = URLFrontier(ignore_url=ignore_url)
-    crawlers = Group(8, Crawler, args=(q_urls, q_results, stats))
+    frontier = URLFrontier(stats, ignore_url=ignore_url)
+    crawlers = Group(40, Crawler, args=(q_urls, q_results, stats))
 
     url_feeder = URLFeeder(frontier, q_urls)
     result_processor = ResultProcessor(frontier, q_results)
 
-    frontier.add('kpvz7kpmcmne52qf.onion', 'http://kpvz7kpmcmne52qf.onion/wiki/index.php/Main_Page')
+    frontier.add('http://kpvz7kpmcmne52qf.onion/wiki/index.php/Main_Page')
+    # frontier.add('http://zqktlwi4fecvo6ri.onion/wiki/index.php/Main_Page', 'http://zqktlwi4fecvo6ri.onion/wiki/index.php/Main_Page')
 
     url_feeder.start()
     result_processor.start()

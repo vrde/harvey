@@ -22,6 +22,9 @@ class Crawler(Greenlet):
         while True:
             url = self.q_urls.get()
             log.debug(u'Got new url: {}'.format(url))
+            self.stats['q_urls'] = self.q_urls.qsize()
+            self.stats['q_results'] = self.q_results.qsize()
+            self.stats['waiting for response'] += 1
 
             try:
                 r = self.get(url)
@@ -31,6 +34,7 @@ class Crawler(Greenlet):
                 pass
             except:
                 log.exception(u'Exception while crawling {}'.format(url))
+            self.stats['waiting for response'] -= 1
 
     def get(self, url):
         session = requesocks.session()

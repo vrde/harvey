@@ -33,10 +33,12 @@ request was originated) and the URLs extracted.
 """
 from urlparse import urlparse
 from collections import defaultdict
+from operator import itemgetter
 import time
 
 from harvey import settings
 from harvey.heap import InMemoryHeap
+from harvey.sorted_collection import SortedKeyValue
 
 import logging
 log = logging.getLogger(__name__)
@@ -57,9 +59,16 @@ class URLFrontier(object):
         self.urls = set()
         self.buckets = defaultdict(set)
         self.hosts = InMemoryHeap()
+        self.hosts_waitlist = SortedKeyValue(key=itemgetter(1),
+                                             value=itemgetter(0))
+
+    def get_waittime(self, domain):
+        return int(time.time()) + 10
 
     def add(self, origin, urls=None):
-        domain = urlparse(origin).hostname
+        hostname = urlparse(origin).hostname
+        waittime = self.get_waittime(hostname)
+
         if not urls:
             urls = set([origin])
 
@@ -68,7 +77,7 @@ class URLFrontier(object):
 
         new_urls = urls - self.urls
 
-        self.hosts.push(int(time.time()) + 10, domain)
+        self.hosts.push(waittime, hostname)
 
         for url in new_urls:
             hostname = urlparse(url).hostname
@@ -83,9 +92,19 @@ class URLFrontier(object):
         log.debug('Found {} new urls'.format(len(new_urls)))
         self.urls.update(new_urls)
         self.stats['URLs frontier'] = len(self.urls)
-        self.stats['domains'] = len(self.hosts)
+        self.stats['hostnames'] = len(self.hosts)
+        return waittime
+
+    def eventually_add_host_to_heap(self):
+        try:
+            host = self.hosts_waitlist.find_le(time.time())
+        except ValueError:
+            pass
+        else:
+            self.hosts.push(*host)
 
     def pop(self):
+        self.eventually_add_host_to_heap()
         url = None
         while url is None:
             try:
@@ -97,7 +116,7 @@ class URLFrontier(object):
                 url = self.buckets[hostname].pop()
             except KeyError:
                 del self.buckets[hostname]
-
-        self.hosts.push(int(time.time()) + 10, hostname)
+            else:
+                self.hosts_waitlist.insert((self.get_waittime(hostname), hostname))
 
         return url

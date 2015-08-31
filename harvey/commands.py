@@ -19,7 +19,7 @@ def run_crawler(arguments):
     q_urls = gevent.queue.Queue(100)
     q_results = gevent.queue.Queue(100)
     frontier = URLFrontier(stats, ignore_url=ignore_url)
-    crawlers = Group(40, Crawler, args=(q_urls, q_results, stats))
+    crawlers = Group(settings.REQUEST_CONCURRENCY, Crawler, args=(q_urls, q_results, stats))
 
     url_feeder = URLFeeder(frontier, q_urls)
     result_processor = ResultProcessor(frontier, q_results)

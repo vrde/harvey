@@ -1,5 +1,7 @@
-from harvey.frontier import URLFrontier
+from time import time as _time
 from collections import Counter
+
+from harvey.frontier import URLFrontier
 
 
 def test_pop_returns_none_if_no_more_urls_are_available():
@@ -14,7 +16,7 @@ def test_pop_returns_none_if_no_more_urls_are_available():
     assert len(u.hosts.heap) == 0
 
     # and the bucket should have been removed
-    assert len(u.buckets) == 0
+    # assert len(u.buckets) == 0
 
 
 def test_adding_url_to_frontier_adds_it_to_the_priority_queue(monkeypatch):
@@ -52,3 +54,26 @@ def test_adding_an_existing_url_to_frontier_doesnt_work():
     u.add(origin_1, url_1)
 
     assert len(u.urls) == 1
+
+
+def test_popping_a_url_disable_the_host_for_a_while(monkeypatch):
+    u = URLFrontier(Counter(), ignore_url=None)
+    origin_1 = 'https://en.wikipedia.org/wiki/Whatever'
+    url_1 = 'https://en.wikipedia.org/wiki/Meh'
+    url_2 = 'https://en.wikipedia.org/wiki/Interesting_(sarcasm)'
+    url_3 = 'https://en.wikipedia.org/wiki/Foo'
+
+    monkeypatch.setattr('time.time', lambda: 0)
+    u.add(origin_1, set([url_1, url_2, url_3]))
+    assert u.pop() == url_1
+
+    # the host is still in the wait line
+    assert u.pop() == None
+
+    monkeypatch.setattr('time.time', lambda: _time())
+    assert u.pop() == url_2
+    assert u.pop() == None
+
+
+def test_adding_urls_at_the_same_time_does_not_fuckup_the_frontier(monkeypatch):
+    pass

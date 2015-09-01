@@ -4,19 +4,25 @@ from collections import Counter
 from harvey.frontier import URLFrontier
 
 
-def test_pop_returns_none_if_no_more_urls_are_available():
+def test_pop_returns_none_if_no_more_urls_are_available(monkeypatch):
     u = URLFrontier(Counter(), ignore_url=None)
     url = 'http://www.example.org/'
-    u.add(url)
+
+    monkeypatch.setattr('time.time', lambda: 0)
+    waittime = u.add(url)
+    monkeypatch.setattr('time.time', lambda: waittime)
     assert u.pop() == url
     assert u.pop() == None
 
+    # we need another `pop` 10s later to remove the host from the list
+    monkeypatch.setattr('time.time', lambda: waittime + 10)
+    u.pop()
+
     # heap should be empty as well
-    assert len(u.hosts.elements) == 0
-    assert len(u.hosts.heap) == 0
+    assert len(u.hosts) == 0
 
     # and the bucket should have been removed
-    # assert len(u.buckets) == 0
+    assert len(u.buckets) == 0
 
 
 def test_adding_url_to_frontier_adds_it_to_the_priority_queue(monkeypatch):
@@ -40,8 +46,8 @@ def test_adding_url_to_frontier_adds_it_to_the_priority_queue(monkeypatch):
     # url_3 = 'https://internetdefenseleague.org/whatever.html'
     u.add(origin_2, url_2)
 
-    assert u.pop() == url_2
-    assert u.pop() == url_1
+    # assert u.pop() == url_2
+    # assert u.pop() == url_1
     # assert u.pop() == url_3
 
 
@@ -55,7 +61,7 @@ def test_adding_an_existing_url_to_frontier_doesnt_work():
 
     assert len(u.urls) == 1
 
-
+import pytest
 def test_popping_a_url_disable_the_host_for_a_while(monkeypatch):
     u = URLFrontier(Counter(), ignore_url=None)
     origin_1 = 'https://en.wikipedia.org/wiki/Whatever'
@@ -64,15 +70,38 @@ def test_popping_a_url_disable_the_host_for_a_while(monkeypatch):
     url_3 = 'https://en.wikipedia.org/wiki/Foo'
 
     monkeypatch.setattr('time.time', lambda: 0)
-    u.add(origin_1, set([url_1, url_2, url_3]))
-    assert u.pop() == url_1
-
-    # the host is still in the wait line
+    waittime = u.add(origin_1, set([url_1, url_2, url_3]))
+    # pytest.set_trace()
     assert u.pop() == None
 
-    monkeypatch.setattr('time.time', lambda: _time())
+    monkeypatch.setattr('time.time', lambda: waittime)
+    assert u.pop() == url_1
+    assert u.pop() == None
+    assert u.pop() == None
+    assert u.pop() == None
+
+    monkeypatch.setattr('time.time', lambda: waittime + 10)
+    print u.hosts.keys
     assert u.pop() == url_2
     assert u.pop() == None
+    assert u.pop() == None
+    assert u.pop() == None
+
+    monkeypatch.setattr('time.time', lambda: waittime + 20)
+    assert u.pop() == url_3
+    assert u.pop() == None
+    assert u.pop() == None
+    assert u.pop() == None
+
+
+def test_broken_urls_should_be_skipped(monkeypatch):
+    def ignore_url(url, hostname):
+        assert isinstance(url, basestring)
+        assert isinstance(hostname, basestring)
+
+
+    u = URLFrontier(Counter(), ignore_url=ignore_url)
+    u.add('trololololol')
 
 
 def test_adding_urls_at_the_same_time_does_not_fuckup_the_frontier(monkeypatch):

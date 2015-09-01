@@ -136,9 +136,9 @@ class SortedCollection(object):
         j = bisect_right(self._keys, k)
 
         if self._only_key:
-            for i, item in enumerate(self._items[i:j]):
+            for x, item in enumerate(self._items[i:j]):
                 if self._key(item) == k:
-                    return i
+                    return x + i
         return self._items[i:j].index(item) + i
 
         raise ValueError
@@ -215,15 +215,32 @@ class SortedKeyValue(object):
         self.value = value
         self.keys = SortedCollection(key=key, only_key=True)
         self.values = SortedCollection(key=value)
+        self.set = set()
 
     def insert(self, item):
         try:
             old_item = self.keys.remove(item)
             self.values.remove(old_item)
-        except:
+        except ValueError:
             pass
         self.keys.insert(item)
         self.values.insert(item)
+        self.set.add(self.key(item))
+
+    def remove(self, item):
+        try:
+            old_item = self.keys.remove(item)
+            self.values.remove(old_item)
+            self.set.remove(self.key(item))
+        except ValueError:
+            pass
+
+    def __contains__(self, key):
+        return key in self.set
+
+    def __len__(self):
+        return len(self.set)
+
 
     def find_le(self, value):
         return self.values.find_le(value)

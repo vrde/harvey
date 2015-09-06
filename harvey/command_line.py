@@ -13,7 +13,10 @@ Options:
   --logfile=FILE  Override the default log file (harvey.log)
 """
 
-from harvey import crazy_hacks
+import gevent.monkey
+
+gevent.monkey.patch_all()
+
 
 from harvey import settings
 from harvey import utils

@@ -5,9 +5,6 @@ module and give and explicit name to it.
 """
 
 
-import gevent.monkey
-
-gevent.monkey.patch_all()
 
 
 # Re-add sslwrap to Python 2.7.9

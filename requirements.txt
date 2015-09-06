@@ -1,6 +1,6 @@
-gevent==1.0.1
+gevent==1.0.2
 docopt==0.6.2
 git+git://github.com/vrde/gevent-utils.git#egg=gevent-utils
-requesocks==0.10.8
 lxml==3.4.2
 urltools==0.3.2
+PySocks

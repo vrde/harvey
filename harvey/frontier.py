@@ -31,7 +31,7 @@ request was originated) and the URLs extracted.
    _pyreBloom https://github.com/seomoz/pyreBloom
 
 """
-from urlparse import urlparse
+from urllib.parse import urlparse
 from collections import defaultdict
 from operator import itemgetter
 import time
@@ -47,18 +47,20 @@ log = logging.getLogger(__name__)
 try:
     ignore_url = settings.IGNORE_URL_FUNC
 except AttributeError:
-    ignore_url = None
+    ignore_url = lambda url: False
 
 
 class URLFrontier(object):
 
     def __init__(self, stats, ignore_url=ignore_url):
         self.stats = stats
+        if ignore_url is None:
+            ignore_url = lambda url: False
+
         self.ignore_url = ignore_url
 
         self.urls = set()
         self.buckets = defaultdict(set)
-        self.hosts = InMemoryHeap()
         self.hosts = SortedKeyValue(key=itemgetter(1),
                                     value=itemgetter(0))
 
@@ -77,19 +79,20 @@ class URLFrontier(object):
 
         new_urls = urls - self.urls
 
-        self.hosts.insert((waittime, hostname))
+        if not self.ignore_url(origin):
+            self.hosts.insert((waittime, hostname))
 
         for url in new_urls:
             hostname = urlparse(url).hostname or ''
 
-            if self.ignore_url and self.ignore_url(url, hostname):
+            if self.ignore_url(url):
                 continue
 
             self.buckets[hostname].add(url)
             if hostname not in self.hosts:
                 self.hosts.insert((0, hostname))
 
-        log.debug('Found {} new urls'.format(len(new_urls)))
+        # log.debug('Found {} new urls'.format(len(new_urls)))
         self.urls.update(new_urls)
         self.stats['URLs frontier'] = len(self.urls)
         self.stats['hostnames'] = len(self.hosts)
@@ -102,13 +105,14 @@ class URLFrontier(object):
                 val, hostname = self.hosts.find_le(time.time())
             except ValueError:
                 return
-            else:
-                self.hosts.insert((self.get_waittime(hostname), hostname))
+
+            waittime = self.get_waittime(hostname)
+            self.hosts.insert((waittime, hostname))
 
             try:
                 url = self.buckets[hostname].pop()
             except KeyError:
                 del self.buckets[hostname]
-                self.hosts.remove((val, hostname))
+                self.hosts.remove((0, hostname))
 
         return url

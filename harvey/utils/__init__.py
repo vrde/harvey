@@ -21,10 +21,27 @@ def format_exc():
 
 
 def update(d, u):
-    for k, v in u.iteritems():
+    for k, v in u.items():
         if isinstance(v, collections.Mapping):
             r = update(d.get(k, {}), v)
             d[k] = r
         else:
             d[k] = u[k]
     return d
+
+
+def timeit(func, idx, *args, **kwargs):
+    start = time.time()
+    exc = None
+    try:
+        val = func(*args, **kwargs)
+    except Exception as e:
+        exc = e
+
+    delta = time.time() - start
+    if delta > 10:
+        print(idx, func.__name__, '{}s'.format(delta))
+    if exc:
+        raise exc
+    return val
+

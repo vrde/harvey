@@ -218,22 +218,18 @@ class SortedKeyValue(object):
         self.set = set()
 
     def insert(self, item):
-        try:
-            old_item = self.keys.remove(item)
-            self.values.remove(old_item)
-        except ValueError:
-            pass
+        self.remove(item)
         self.keys.insert(item)
         self.values.insert(item)
         self.set.add(self.key(item))
 
     def remove(self, item):
-        try:
+        k = self.key(item)
+
+        if k in self.set:
             old_item = self.keys.remove(item)
             self.values.remove(old_item)
-            self.set.remove(self.key(item))
-        except ValueError:
-            pass
+            self.set.remove(k)
 
     def __contains__(self, key):
         return key in self.set

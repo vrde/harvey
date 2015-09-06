@@ -1,8 +1,9 @@
 from gevent import Greenlet
-import requesocks
+# import requesocks
 import lxml.html
-from urlparse import urljoin
+from urllib.parse import urljoin
 import urltools
+import requests
 
 from harvey import settings
 
@@ -21,7 +22,7 @@ class Crawler(Greenlet):
     def _run(self):
         while True:
             url = self.q_urls.get()
-            log.debug(u'Got new url: {}'.format(url))
+            # log.debug(u'Got new url: {}'.format(url))
             self.stats['q_urls'] = self.q_urls.qsize()
             self.stats['q_results'] = self.q_results.qsize()
             self.stats['waiting for response'] += 1
@@ -31,14 +32,15 @@ class Crawler(Greenlet):
                 urls = self.extract_urls(r)
                 self.q_results.put((r.url, urls))
             except TypeError:
-                pass
+                raise
             except:
                 log.exception(u'Exception while crawling {}'.format(url))
             self.stats['waiting for response'] -= 1
 
     def get(self, url):
-        session = requesocks.session()
-        session.proxies = settings.PROXIES
+        session = requests.session()
+        # session = requesocks.session()
+        # session.proxies = settings.PROXIES
         r = session.get(url)
         return r
 

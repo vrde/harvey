@@ -47,7 +47,7 @@ def configure_logging(arguments):
 
 def main():
     def killall(signal, frame):
-        print 'Got signal {}, quitting'.format(signal)
+        print('Got signal {}, quitting'.format(signal))
         for proc in procs:
             proc.kill()
         sys.exit(0)

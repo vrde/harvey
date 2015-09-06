@@ -1,4 +1,5 @@
 from gevent import Greenlet, sleep
+from harvey.utils import timeit
 
 import logging
 log = logging.getLogger(__name__)
@@ -18,10 +19,11 @@ class Worker(Greenlet):
         while True:
             self.do()
 
+
 class URLFeeder(Worker):
 
     def do(self):
-        url = self.frontier.pop()
+        url = timeit(self.frontier.pop, 'feeder')
         if not url:
             sleep(5)
         else:
@@ -32,4 +34,4 @@ class ResultProcessor(Worker):
 
     def do(self):
         origin, urls = self.queue.get()
-        self.frontier.add(origin, urls)
+        timeit(self.frontier.add, origin, origin, urls)
